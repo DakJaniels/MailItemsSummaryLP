@@ -5,8 +5,6 @@
 ## AddOnVersion: 1
 ## Version: 1.0 r1
 ## DependsOn: MasterMerchant
-## IsLibrary: false
-
 
 MailItemsSummaryMM.lua
 
