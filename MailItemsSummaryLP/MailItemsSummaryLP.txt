@@ -1,12 +1,12 @@
-## Title: MailItemsSummaryMM
+## Title: MailItemsSummaryLP
 ## Author: @dack_janiels[NA] inspired by ragingpix3l
 ## APIVersion: 101038 101039
-## Description: Puts attached items avg value into mail body using MasterMerchant
+## Description: Puts attached items value into mail body using LibPrice
 ## AddOnVersion: 1
-## Version: 1.0 r1
-## DependsOn: MasterMerchant
+## Version: 1.0 r2
+## DependsOn: LibPrice>=70410
 
-MailItemsSummaryMM.lua
+MailItemsSummaryLP.lua
 
 
 ; This Add-on is not created by, affiliated with or sponsored by ZeniMax
