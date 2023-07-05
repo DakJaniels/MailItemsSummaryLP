@@ -42,32 +42,48 @@ local MailItemsSummaryMM = {
   current_api = 101038, -- Current API version
   future_api = 101039, -- Future API version
 }
--- Define a function named GetItemPrice that takes itemLink, considerCondition, bagId, and slotIndex as parameters
+-- This function retrieves the price of an item based on various sources: MasterMerchant, LibGuildStore, and TamrielTradeCentrePrice.
 function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
-  -- Get the default price of the item by calling GetItemLinkValue or GetItemSellValueWithBonuses
   local defaultPrice = GetItemLinkValue(itemLink, considerCondition) or GetItemSellValueWithBonuses(bagId, slotIndex)
-  -- Assign the value of MasterMerchant to a local variable named MasterMerchant
+
+  -- Check if MasterMerchant is available
   local MasterMerchant = MasterMerchant
-  -- Assign the value of LibGuildStore to a local variable named LibGuildStore
+
+  -- Check if LibGuildStore is available
   local LibGuildStore = LibGuildStore
-  -- Declare a variable named MMPrice
+
+  -- Check if TamrielTradeCentrePrice is available
+  local TamrielTradeCentrePrice = TamrielTradeCentrePrice
+
+  -- Variable to store the MasterMerchant price
   local MMPrice
-  -- Check if MasterMerchant is not nil
+
+  -- If MasterMerchant is available, check if it is initialized and if LibGuildStore is ready
   if MasterMerchant then
-    -- Check if MasterMerchant is initialized and LibGuildStore is ready
     if MasterMerchant.isInitialized and LibGuildStore.guildStoreReady then
-      -- Get item statistics from MasterMerchant and assign it to itemStats
+      -- Retrieve item statistics from MasterMerchant and get the average price
       local statsData = MasterMerchant:itemStats(itemLink, false)
-      -- Check if statsData exists and has avgPrice property
       if statsData and statsData.avgPrice then
-        -- Round the avgPrice using zround function and assign it to MMPrice
         MMPrice = zround(statsData.avgPrice)
       end
     end
   end
-  -- Return MMPrice if it exists, otherwise return defaultPrice
-  return MMPrice or defaultPrice
+
+  -- Variable to store the TamrielTradeCentrePrice price
+  local TTCPrice
+
+  -- If TamrielTradeCentrePrice is available, retrieve the suggested price for the item
+  if TamrielTradeCentrePrice then
+    local priceInfo = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
+    if priceInfo and priceInfo.SuggestedPrice then
+      TTCPrice = zround(priceInfo.SuggestedPrice)
+    end
+  end
+
+  -- Return the MasterMerchant price, TamrielTradeCentrePrice price, or default price
+  return MMPrice or TTCPrice or defaultPrice
 end
+
 -- Define a local function named MISMM
 local function MISMM()
   -- Check if mailSend scene is not showing
