@@ -1,171 +1,144 @@
--- This code is written in Lua programming language
+-- Importing global variables into local variables to improve performance and readability
+local _G = _G
+local SCENE_MANAGER = _G.SCENE_MANAGER
+local EVENT_MANAGER = _G.GetEventManager()
 
--- SCENE_MANAGER constant is assigned the value of SCENE_MANAGER global variable
-local SCENE_MANAGER = SCENE_MANAGER
-
--- If SCENE_MANAGER is nil, return from the function and stop executing the code
+-- Checking if SCENE_MANAGER is available, if not, return
 if SCENE_MANAGER == nil then
   return
 end
 
--- EVENT_MANAGER constant is assigned the value of GetEventManager() function
-local EVENT_MANAGER = GetEventManager()
-
--- If EVENT_MANAGER is nil, return from the function and stop executing the code
+-- Checking if EVENT_MANAGER is available, if not, return
 if EVENT_MANAGER == nil then
   return
 end
 
--- BAG_BACKPACK constant is assigned the value of 1
+-- Assigning constant values to local variables
 local BAG_BACKPACK = 1
-
--- LINK_STYLE_DEFAULT constant is assigned the value of 0
 local LINK_STYLE_DEFAULT = 0
 
--- ZO_MailSendBodyField constant is assigned the value of ZO_MailSendBodyField global variable
-local ZO_MailSendBodyField = ZO_MailSendBodyField
-
--- SLASH_COMMANDS constant is assigned the value of SLASH_COMMANDS global variable
-local SLASH_COMMANDS = SLASH_COMMANDS
-
--- GetItemLinkValue constant is assigned the value of GetItemLinkValue global function
-local GetItemLinkValue = GetItemLinkValue
-
--- GetItemSellValueWithBonuses constant is assigned the value of GetItemSellValueWithBonuses global function
-local GetItemSellValueWithBonuses = GetItemSellValueWithBonuses
-
--- GetItemInfo constant is assigned the value of GetItemInfo global function
-local GetItemInfo = GetItemInfo
-
--- GetItemLink constant is assigned the value of GetItemLink global function
-local GetItemLink = GetItemLink
-
--- GetBagSize constant is assigned the value of GetBagSize global function
-local GetBagSize = GetBagSize
-
--- zround constant is assigned the value of zo_round global function
-local zround = zo_round
+-- Importing specific global variables into local variables
+local ZO_MailSendBodyField = _G.ZO_MailSendBodyField
+local SLASH_COMMANDS = _G.SLASH_COMMANDS
+local GetItemLinkValue = _G.GetItemLinkValue
+local GetItemSellValueWithBonuses = _G.GetItemSellValueWithBonuses
+local GetItemInfo = _G.GetItemInfo
+local GetItemLink = _G.GetItemLink
+local GetBagSize = _G.GetBagSize
+local zround = _G.zo_round
+local ZO_LocalizeDecimalNumber = _G.ZO_LocalizeDecimalNumber
+local zo_roundToNearest = _G.zo_roundToNearest
+local EVENT_ADD_ON_LOADED = _G.EVENT_ADD_ON_LOADED
+local zo_callLater = _G.zo_callLater
+local tinsert, tconcat = _G.table.insert, _G.table.concat
 
 -- MailItemsSummaryLP table is created with key-value pairs for various properties
 local MailItemsSummaryLP = {
   AddonName = "MailItemsSummaryLP", -- Name of the addon
   major = "1", -- Major version number
   minor = "0", -- Minor version number
-  patch = "2", -- Patch version number
-  build = "2", -- Build version number
+  patch = "3", -- Patch version number
+  build = "3", -- Build version number
   current_api = 101038, -- Current API version
   future_api = 101039, -- Future API version
 }
 
--- LibPrice constant is assigned the value of LibPrice global variable
-local LibPrice = LibPrice
+-- Importing a global variable into a local variable
+local LibPrice = _G.LibPrice
 
--- GetItemPrice function takes parameters itemLink, considerCondition, bagId, slotIndex
-function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
-  -- defaultPrice variable is assigned the value of GetItemLinkValue or GetItemSellValueWithBonuses based on condition
+-- Function to calculate the price of an item
+local function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
+  -- Calculate the default price using provided functions
   local defaultPrice = GetItemLinkValue(itemLink, considerCondition) or GetItemSellValueWithBonuses(bagId, slotIndex)
 
-  -- libPriceValue, source_key, field_name variables are assigned values from LibPrice.ItemLinkToPriceGold function
-  local libPriceValue, source_key, field_name = LibPrice.ItemLinkToPriceGold(itemLink)
-
+  -- Use LibPrice addon to get additional price information
+  local libPriceValue = LibPrice.ItemLinkToPriceGold(itemLink, "mm", "att", "ttc")
   local price
+
+  -- If LibPrice provides a value, round it and assign it to the 'price' variable
   if libPriceValue then
-    -- If libPriceValue is not nil, assign the rounded value of libPriceValue to price
     price = zround(libPriceValue)
   end
 
-  -- Return the value of price if it exists, otherwise return defaultPrice
+  -- Return the calculated price (either from LibPrice or default)
   return price or defaultPrice
 end
 
--- formatNumber function takes a number as input and returns a formatted string
-function formatNumber(value)
-  local formatted = value
-  while true do
-    -- Replace every occurrence of a pattern (^-?%d+)(%d%d%d) in formatted with %1.%2
-    formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1.%2")
-
-    -- If no replacements were made, break the loop
-    if k == 0 then
-      break
-    end
-  end
-
-  -- Return the formatted string
-  return formatted
-end
-
--- MISLP function
-function MISLP()
-  -- If the current scene is not "mailSend", return from the function and stop executing the code
+-- Main function that calculates the total price of items in the backpack and displays it in the mail body field
+local function MISLP()
+  -- Check if the mailSend scene is currently being shown, if not, return
   if not SCENE_MANAGER:IsShowing("mailSend") then
     return
   end
 
-  -- Create an empty table ptable
+  -- Create an empty table to hold the item details and prices
   local ptable = {}
 
-  -- Assign the value of BAG_BACKPACK to the variable bagId
+  -- Set the bagId to BAG_BACKPACK
   local bagId = BAG_BACKPACK
 
-  -- Assign 0 to totalprice variable
+  -- Initialize the totalprice variable
   local totalprice = zo_roundToNearest(0, 0)
 
-  -- Assign the value of LINK_STYLE_DEFAULT to linkStyle variable
+  -- Set the linkStyle to LINK_STYLE_DEFAULT
   local linkStyle = LINK_STYLE_DEFAULT
 
-  -- Iterate over each slotIndex from 0 to GetBagSize(bagId) - 1
+  -- Iterate over each slot in the backpack
   for slotIndex = 0, GetBagSize(bagId) - 1 do
-    -- Get the itemLink at the specified bagId and slotIndex with the given linkStyle
+    -- Get the item link for the current slot
     local itemLink = GetItemLink(bagId, slotIndex, linkStyle)
 
-    -- Get the item information for the specified bagId and slotIndex
+    -- Get the stack size and locked status of the item
     local _, stack, _, _, locked, _ = GetItemInfo(bagId, slotIndex)
 
-    -- If the item is locked
+    -- If the item is locked, calculate its price and add it to the ptable table
     if locked then
-      -- Get the price of the item using GetItemPrice function and assign it to price variable (or 0 if it's nil)
       local price = GetItemPrice(itemLink) or 0
-
-      -- Round the price to the nearest whole number
       price = zround(price)
+      tinsert(
+        ptable,
+        itemLink
+          .. "x"
+          .. stack
+          .. " "
+          .. ZO_LocalizeDecimalNumber(price)
+          .. "="
+          .. ZO_LocalizeDecimalNumber(stack * price)
+      )
 
-      -- Concatenate the itemLink, stack, formatted price and total price into a string and insert it into ptable
-      table.insert(ptable, itemLink .. "x" .. stack .. " " .. formatNumber(price) .. "=" .. formatNumber(stack * price))
-
-      -- Add the price multiplied by the stack to the totalprice variable
+      -- Calculate the total price by adding the price of this item to the running total
       totalprice = totalprice + price * stack
     end
   end
 
-  -- Insert an empty string into ptable
-  table.insert(ptable, "")
+  -- Add empty line in ptable
+  tinsert(ptable, "")
 
-  -- Insert a string with the total attached value into ptable
-  table.insert(ptable, "Total Attached Value = " .. formatNumber(totalprice))
+  -- Add a line showing the total attached value to the ptable
+  tinsert(ptable, "Total Attached Value = " .. ZO_LocalizeDecimalNumber(totalprice))
 
-  -- Set the text of ZO_MailSendBodyField to the concatenated strings in ptable separated by newline characters
-  ZO_MailSendBodyField:SetText(table.concat(ptable, "\n"))
+  -- Set the text in ZO_MailSendBodyField to the concatenated strings in ptable table
+  ZO_MailSendBodyField:SetText(tconcat(ptable, "\n"))
 end
 
--- Assign the value of 2000 to WAIT_TO_SLASH constant
+-- Number of milliseconds to wait before registering the slash command
 local WAIT_TO_SLASH = 2000
 
--- OnAddOnLoaded function takes parameters _, addonName
-function OnAddOnLoaded(_, addonName)
-  -- If addonName is not equal to MailItemsSummaryLP.AddonName, return from the function and stop executing the code
+-- Event handler for when the addon is loaded
+local function OnAddOnLoaded(_, addonName)
+  -- Check if the loaded addon is the MailItemsSummaryLP addon
   if addonName ~= MailItemsSummaryLP.AddonName then
     return
   end
 
-  -- Unregister the event EVENT_ADD_ON_LOADED for the addonName MailItemsSummaryLP.AddonName
+  -- Unregister from the EVENT_ADD_ON_LOADED event
   EVENT_MANAGER:UnregisterForEvent(MailItemsSummaryLP.AddonName, EVENT_ADD_ON_LOADED)
 
-  -- Call SLASH_COMMANDS["/mislp"] function after a delay of WAIT_TO_SLASH milliseconds
+  -- Register the slash command "/mislp" to call the MISLP function
   zo_callLater(function()
     SLASH_COMMANDS["/mislp"] = MISLP
   end, WAIT_TO_SLASH)
 end
 
--- Register the event EVENT_ADD_ON_LOADED for the addonName MailItemsSummaryLP.AddonName and call OnAddOnLoaded function when triggered
+-- Register for the EVENT_ADD_ON_LOADED event with the OnAddOnLoaded event handler
 EVENT_MANAGER:RegisterForEvent(MailItemsSummaryLP.AddonName, EVENT_ADD_ON_LOADED, OnAddOnLoaded)

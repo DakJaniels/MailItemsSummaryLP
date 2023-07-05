@@ -3,7 +3,7 @@
 ## APIVersion: 101038 101039
 ## Description: Puts attached items value into mail body using LibPrice
 ## AddOnVersion: 1
-## Version: 1.0 r2
+## Version: 1.0 r3
 ## DependsOn: LibPrice>=70410
 
 MailItemsSummaryLP.lua
