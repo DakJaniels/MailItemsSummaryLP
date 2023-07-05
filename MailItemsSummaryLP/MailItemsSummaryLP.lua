@@ -16,39 +16,40 @@ local GetItemInfo = GetItemInfo
 local GetItemLink = GetItemLink
 local GetBagSize = GetBagSize
 local zround = zo_round
-local MailItemsSummaryMM = {
-  AddonName = "MailItemsSummaryMM",
+local MailItemsSummaryLP = {
+  AddonName = "MailItemsSummaryLP",
   major = "1",
   minor = "0",
-  patch = "1",
-  build = "1",
+  patch = "2",
+  build = "2",
   current_api = 101038,
   future_api = 101039,
 }
+
+local LibPrice = LibPrice
+
 function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
   local defaultPrice = GetItemLinkValue(itemLink, considerCondition) or GetItemSellValueWithBonuses(bagId, slotIndex)
-  local MasterMerchant = MasterMerchant
-  local LibGuildStore = LibGuildStore
-  local TamrielTradeCentrePrice = TamrielTradeCentrePrice
-  local MMPrice
-  if MasterMerchant then
-    if MasterMerchant.isInitialized and LibGuildStore.guildStoreReady then
-      local statsData = MasterMerchant:itemStats(itemLink, false)
-      if statsData and statsData.avgPrice then
-        MMPrice = zround(statsData.avgPrice)
-      end
-    end
+  local libPriceValue, source_key, field_name = LibPrice.ItemLinkToPriceGold(itemLink)
+  local price
+  if libPriceValue then
+    price = zround(libPriceValue)
   end
-
-  if TamrielTradeCentrePrice then
-    local priceInfo = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
-    if priceInfo and priceInfo.SuggestedPrice then
-      TTCPrice = zround(priceInfo.SuggestedPrice)
-    end
-  end
-  return MMPrice or TTCPrice or defaultPrice
+  return price or defaultPrice
 end
-local function MISMM()
+
+function formatNumber(value)
+  local formatted = value
+  while true do
+    formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1.%2")
+    if k == 0 then
+      break
+    end
+  end
+  return formatted
+end
+
+function MISLP()
   if not SCENE_MANAGER:IsShowing("mailSend") then
     return
   end
@@ -62,21 +63,24 @@ local function MISMM()
     if locked then
       local price = GetItemPrice(itemLink) or 0
       price = zround(price)
-      table.insert(ptable, itemLink .. "x" .. stack .. " " .. price .. "=" .. stack * price)
+      table.insert(ptable, itemLink .. "x" .. stack .. " " .. formatNumber(price) .. "=" .. formatNumber(stack * price))
       totalprice = totalprice + price * stack
     end
   end
-  table.insert(ptable, tostring(totalprice))
+  table.insert(ptable, "")
+  table.insert(ptable, "Total Attached Value = " .. formatNumber(totalprice))
   ZO_MailSendBodyField:SetText(table.concat(ptable, "\n"))
 end
+
 local WAIT_TO_SLASH = 2000
+
 function OnAddOnLoaded(_, addonName)
-  if addonName ~= MailItemsSummaryMM.AddonName then
+  if addonName ~= MailItemsSummaryLP.AddonName then
     return
   end
-  EVENT_MANAGER:UnregisterForEvent(MailItemsSummaryMM.AddonName, EVENT_ADD_ON_LOADED)
+  EVENT_MANAGER:UnregisterForEvent(MailItemsSummaryLP.AddonName, EVENT_ADD_ON_LOADED)
   zo_callLater(function()
-    SLASH_COMMANDS["/mismm"] = MISMM
+    SLASH_COMMANDS["/mislp"] = MISLP
   end, WAIT_TO_SLASH)
 end
-EVENT_MANAGER:RegisterForEvent(MailItemsSummaryMM.AddonName, EVENT_ADD_ON_LOADED, OnAddOnLoaded)
+EVENT_MANAGER:RegisterForEvent(MailItemsSummaryLP.AddonName, EVENT_ADD_ON_LOADED, OnAddOnLoaded)
