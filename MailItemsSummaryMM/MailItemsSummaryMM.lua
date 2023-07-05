@@ -29,6 +29,7 @@ function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
   local defaultPrice = GetItemLinkValue(itemLink, considerCondition) or GetItemSellValueWithBonuses(bagId, slotIndex)
   local MasterMerchant = MasterMerchant
   local LibGuildStore = LibGuildStore
+  local TamrielTradeCentrePrice = TamrielTradeCentrePrice
   local MMPrice
   if MasterMerchant then
     if MasterMerchant.isInitialized and LibGuildStore.guildStoreReady then
@@ -38,7 +39,14 @@ function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
       end
     end
   end
-  return MMPrice or defaultPrice
+
+  if TamrielTradeCentrePrice then
+    local priceInfo = TamrielTradeCentrePrice:GetPriceInfo(itemLink)
+    if priceInfo and priceInfo.SuggestedPrice then
+      TTCPrice = zround(priceInfo.SuggestedPrice)
+    end
+  end
+  return MMPrice or TTCPrice or defaultPrice
 end
 local function MISMM()
   if not SCENE_MANAGER:IsShowing("mailSend") then
