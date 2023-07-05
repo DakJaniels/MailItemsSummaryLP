@@ -1,21 +1,26 @@
-local SCENE_MANAGER = SCENE_MANAGER
+local _G = _G
+local SCENE_MANAGER = _G.SCENE_MANAGER
 if SCENE_MANAGER == nil then
   return
 end
-local EVENT_MANAGER = GetEventManager()
+local EVENT_MANAGER = _G.GetEventManager()
 if EVENT_MANAGER == nil then
   return
 end
 local BAG_BACKPACK = 1
 local LINK_STYLE_DEFAULT = 0
-local ZO_MailSendBodyField = ZO_MailSendBodyField
-local SLASH_COMMANDS = SLASH_COMMANDS
-local GetItemLinkValue = GetItemLinkValue
-local GetItemSellValueWithBonuses = GetItemSellValueWithBonuses
-local GetItemInfo = GetItemInfo
-local GetItemLink = GetItemLink
-local GetBagSize = GetBagSize
-local zround = zo_round
+local ZO_MailSendBodyField = _G.ZO_MailSendBodyField
+local SLASH_COMMANDS = _G.SLASH_COMMANDS
+local GetItemLinkValue = _G.GetItemLinkValue
+local GetItemSellValueWithBonuses = _G.GetItemSellValueWithBonuses
+local GetItemInfo = _G.GetItemInfo
+local GetItemLink = _G.GetItemLink
+local GetBagSize = _G.GetBagSize
+local zround = _G.zo_round
+local ZO_LocalizeDecimalNumber = _G.ZO_LocalizeDecimalNumber
+local zo_roundToNearest = _G.zo_roundToNearest
+local EVENT_ADD_ON_LOADED = _G.EVENT_ADD_ON_LOADED
+local zo_callLater = _G.zo_callLater
 local MailItemsSummaryLP = {
   AddonName = "MailItemsSummaryLP",
   major = "1",
@@ -26,7 +31,7 @@ local MailItemsSummaryLP = {
   future_api = 101039,
 }
 
-local LibPrice = LibPrice
+local LibPrice = _G.LibPrice
 
 local function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
   local defaultPrice = GetItemLinkValue(itemLink, considerCondition) or GetItemSellValueWithBonuses(bagId, slotIndex)
@@ -36,18 +41,6 @@ local function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
     price = zround(libPriceValue)
   end
   return price or defaultPrice
-end
-
-local function formatNumber(value)
-  local formatted = value
-  local k
-  while true do
-    formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1.%2")
-    if k == 0 then
-      break
-    end
-  end
-  return formatted
 end
 
 local function MISLP()
@@ -64,12 +57,21 @@ local function MISLP()
     if locked then
       local price = GetItemPrice(itemLink) or 0
       price = zround(price)
-      table.insert(ptable, itemLink .. "x" .. stack .. " " .. formatNumber(price) .. "=" .. formatNumber(stack * price))
+      table.insert(
+        ptable,
+        itemLink
+          .. "x"
+          .. stack
+          .. " "
+          .. ZO_LocalizeDecimalNumber(price)
+          .. "="
+          .. ZO_LocalizeDecimalNumber(stack * price)
+      )
       totalprice = totalprice + price * stack
     end
   end
   table.insert(ptable, "")
-  table.insert(ptable, "Total Attached Value = " .. formatNumber(totalprice))
+  table.insert(ptable, "Total Attached Value = " .. ZO_LocalizeDecimalNumber(totalprice))
   ZO_MailSendBodyField:SetText(table.concat(ptable, "\n"))
 end
 
