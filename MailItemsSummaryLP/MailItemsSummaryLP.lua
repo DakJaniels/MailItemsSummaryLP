@@ -28,9 +28,9 @@ local MailItemsSummaryLP = {
 
 local LibPrice = LibPrice
 
-function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
+local function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
   local defaultPrice = GetItemLinkValue(itemLink, considerCondition) or GetItemSellValueWithBonuses(bagId, slotIndex)
-  local libPriceValue, source_key, field_name = LibPrice.ItemLinkToPriceGold(itemLink)
+  local libPriceValue = LibPrice.ItemLinkToPriceGold(itemLink, "mm", "att", "ttc")
   local price
   if libPriceValue then
     price = zround(libPriceValue)
@@ -38,8 +38,9 @@ function GetItemPrice(itemLink, considerCondition, bagId, slotIndex)
   return price or defaultPrice
 end
 
-function formatNumber(value)
+local function formatNumber(value)
   local formatted = value
+  local k
   while true do
     formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", "%1.%2")
     if k == 0 then
@@ -49,7 +50,7 @@ function formatNumber(value)
   return formatted
 end
 
-function MISLP()
+local function MISLP()
   if not SCENE_MANAGER:IsShowing("mailSend") then
     return
   end
@@ -74,7 +75,7 @@ end
 
 local WAIT_TO_SLASH = 2000
 
-function OnAddOnLoaded(_, addonName)
+local function OnAddOnLoaded(_, addonName)
   if addonName ~= MailItemsSummaryLP.AddonName then
     return
   end
