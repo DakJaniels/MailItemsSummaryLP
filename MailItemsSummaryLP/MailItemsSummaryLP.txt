@@ -1,10 +1,10 @@
 ## Title: MailItemsSummaryLP
 ## Author: @dack_janiels[NA] inspired by ragingpix3l
-## APIVersion: 101038 101039
+## APIVersion: 101042 101043
 ## Description: Puts attached items value into mail body using LibPrice
 ## AddOnVersion: 1
-## Version: 1.0 r2
-## DependsOn: LibPrice>=70410
+## Version: 1.0.3.4
+## DependsOn: LibPrice>=70430
 
 MailItemsSummaryLP.lua
 
